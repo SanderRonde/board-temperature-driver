@@ -11,6 +11,9 @@
 
 #define UPDATE_INTERVAL_SECS 60
 
+// Don't keep switching back and forth
+#define POST_SWITCH_WAIT_TIME 300
+
 DHT dht(DHTPIN, DHTTYPE);
 
 typedef struct data {
@@ -37,29 +40,84 @@ namespace Temp {
 		return result;
 	}
 
-	void apply_state(String state) {
-		bool new_state = state == "on";
-		data.on = new_state;
+	void apply_state(bool is_on) {
+		data.on = is_on;
 
 		EEPROM.put(0, data);
 		EEPROM.commit();
 
-		if (new_state) {
+		if (is_on) {
 			Motor::move_right();
 		} else {
 			Motor::move_left();
 		}
 	}
 
-	void update_state(float temp) {
-		String state = get_state(temp);
-		bool is_on = state == "on";
-		if (state != "?") {
-			if ((is_on && !data.on) || (!is_on && data.on)) {
-				LOGF("Changing state to %s\n", state.c_str());
-				apply_state(state);
+	typedef struct xhr_result {
+		String state;
+		String mode;
+		bool is_on;
+	} xhr_result_t;
+
+	xhr_result_t* parse_xhr_result(String result) {
+		xhr_result_t* parsed = (xhr_result_t*) malloc(sizeof(xhr_result_t));
+		
+		char str_1[50];
+		char str_2[50];
+		int str_1_len = 0;
+		int str_2_len = 0;
+
+		bool saw_space = false;
+		const char* c_str = result.c_str();
+		for (int i = 0; i < result.length(); i++) {
+			char cur_char = c_str[i];
+			if (cur_char == ' ') {
+				saw_space = true;
+			} else if (saw_space) {
+				str_2[str_2_len++] = cur_char;
+			} else {
+				str_1[str_1_len++] = cur_char;
 			}
 		}
+
+		str_1[str_1_len++] = '\0';
+		str_2[str_2_len++] = '\0';
+
+		parsed->state = String(str_1);
+		parsed->mode = String(str_2);
+		parsed->is_on = parsed->state == "on";
+
+		return parsed;
+	}
+
+	bool is_in_cooldown = false;
+	unsigned int cooldown_start = 0;
+	bool cooldown_state_on = false;
+	void update_mode(bool is_on, bool force) {
+		if ((is_on && !data.on) || (!is_on && data.on)) {
+			if (is_in_cooldown && !force) {
+				// Don't switch, just store this and
+				// switch post-cooldown
+				cooldown_state_on = is_on;
+			} else {
+				LOGF("Changing state to %s\n", is_on ? "on" : "off");
+				apply_state(is_on);
+				
+				is_in_cooldown = true;
+				cooldown_start = millis();
+				cooldown_state_on = is_on;
+			}
+		}
+	}
+
+	void update_state(float temp) {
+		String state = get_state(temp);
+		xhr_result_t* parsed = parse_xhr_result(state);
+
+		if (parsed->state != "?") {
+			update_mode(parsed->is_on, parsed->mode != "auto");
+		}
+		free(parsed);
 	}
 
 	int loop_counts = 0;
@@ -81,6 +139,12 @@ namespace Temp {
 				free(log);
 
 				update_state(temp);
+			}
+
+			if (millis() > cooldown_start + POST_SWITCH_WAIT_TIME * 1000) {
+				// Cooldown over
+				is_in_cooldown = false;
+				update_mode(cooldown_state_on, false);
 			}
 
 			loop_counts++;
