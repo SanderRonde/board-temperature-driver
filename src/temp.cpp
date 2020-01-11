@@ -1,28 +1,32 @@
 #include <string.h>
-#include <motor.h>
 #include <EEPROM.h>
+#include <telnet.h>
+#include <motor.h>
+#include <math.h>
 #include <DHT.h>
 #include <net.h>
 
-#define DHTPIN 5
+#define DHTPIN D5
 #define DHTTYPE DHT22
 
-#define UPDATE_INTERVAL_SECS 5
+#define UPDATE_INTERVAL_SECS 60
 
 DHT dht(DHTPIN, DHTTYPE);
 
+typedef struct data {
+	bool on;
+} data_t;
+
 namespace Temp {
 	char* last_state = NULL;
+	data_t data = { 0 };
 
 	void setup() {
-		pinMode(5, INPUT);
+		pinMode(DHTPIN, INPUT);
 		dht.begin();
 
 		EEPROM.begin(512);
-		EEPROM.get(0, last_state);
-		if (strlen(last_state) == 0) {
-			strcpy(last_state, "off");
-		}
+		EEPROM.get(0, data);
 	}
 
 	String get_state(float temp) {
@@ -34,11 +38,13 @@ namespace Temp {
 	}
 
 	void apply_state(String state) {
-		strcpy(last_state, state.c_str());
-		EEPROM.put(0, last_state);
+		bool new_state = state == "on";
+		data.on = new_state;
+
+		EEPROM.put(0, data);
 		EEPROM.commit();
 
-		if (strcmp(last_state, "on") == 0) {
+		if (new_state) {
 			Motor::move_right();
 		} else {
 			Motor::move_left();
@@ -47,23 +53,40 @@ namespace Temp {
 
 	void update_state(float temp) {
 		String state = get_state(temp);
-		if (state != "?" && strcmp(state.c_str(), last_state) != 0) {
-			apply_state(state);
+		bool is_on = state == "on";
+		if (state != "?") {
+			if ((is_on && !data.on) || (!is_on && data.on)) {
+				LOGF("Changing state to %s\n", state.c_str());
+				apply_state(state);
+			}
 		}
 	}
 
 	int loop_counts = 0;
+	unsigned int last_loop = 0;
 	void loop() {
-		float temp = dht.readTemperature();
-		delay(1000);
+		if (millis() > last_loop + 1000) {
+			last_loop = millis();
 
-		if (loop_counts == 0) {
-			update_state(temp);
-		}
+			float temp = dht.readTemperature();
 
-		loop_counts++;
-		if (loop_counts >= UPDATE_INTERVAL_SECS) {
-			loop_counts = 0;
+			if (isnan(temp)) {
+				return;
+			}
+
+			if (loop_counts == 0) {
+				char* log = (char*) malloc(sizeof(char) * 100);
+				sprintf(log, "Temp is %.1f\n", temp);
+				LOG(log);
+				free(log);
+
+				update_state(temp);
+			}
+
+			loop_counts++;
+			if (loop_counts >= UPDATE_INTERVAL_SECS) {
+				loop_counts = 0;
+			}
 		}
 	}
 }
