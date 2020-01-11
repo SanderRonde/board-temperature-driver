@@ -2,6 +2,7 @@
 #include <EEPROM.h>
 #include <telnet.h>
 #include <motor.h>
+#include <util.h>
 #include <math.h>
 #include <DHT.h>
 #include <net.h>
@@ -53,43 +54,6 @@ namespace Temp {
 		}
 	}
 
-	typedef struct xhr_result {
-		String state;
-		String mode;
-		bool is_on;
-	} xhr_result_t;
-
-	xhr_result_t* parse_xhr_result(String result) {
-		xhr_result_t* parsed = (xhr_result_t*) malloc(sizeof(xhr_result_t));
-		
-		char str_1[50];
-		char str_2[50];
-		int str_1_len = 0;
-		int str_2_len = 0;
-
-		bool saw_space = false;
-		const char* c_str = result.c_str();
-		for (int i = 0; i < result.length(); i++) {
-			char cur_char = c_str[i];
-			if (cur_char == ' ') {
-				saw_space = true;
-			} else if (saw_space) {
-				str_2[str_2_len++] = cur_char;
-			} else {
-				str_1[str_1_len++] = cur_char;
-			}
-		}
-
-		str_1[str_1_len++] = '\0';
-		str_2[str_2_len++] = '\0';
-
-		parsed->state = String(str_1);
-		parsed->mode = String(str_2);
-		parsed->is_on = parsed->state == "on";
-
-		return parsed;
-	}
-
 	bool is_in_cooldown = false;
 	unsigned int cooldown_start = 0;
 	bool cooldown_state_on = false;
@@ -112,12 +76,14 @@ namespace Temp {
 
 	void update_state(float temp) {
 		String state = get_state(temp);
-		xhr_result_t* parsed = parse_xhr_result(state);
+		char** strings = Util::split_string(state);
+		bool is_on = strcmp(strings[0], "on") == 0;
 
-		if (parsed->state != "?") {
-			update_mode(parsed->is_on, parsed->mode != "auto");
+		if (strcmp(strings[0], "?") != 0) {
+			update_mode(is_on, strcmp(strings[1], "auto") != 0);
 		}
-		free(parsed);
+
+		Util::free_split(strings);
 	}
 
 	int loop_counts = 0;
