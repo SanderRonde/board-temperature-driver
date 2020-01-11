@@ -4,8 +4,7 @@
 #define MOTOR_ON_PIN D6
 #define MOTOR_RIGHT_PIN D7
 
-// TODO: change/measure
-#define FULL_MOVE_SECS 20
+#define FULL_MOVE_SECS 30
 
 namespace Motor {
 	typedef enum DIR {
