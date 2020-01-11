@@ -3,13 +3,12 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WiFiMulti.h>
 #include <ESP8266HTTPClient.h>
-#include <ESP8266WebServer.h>
 #include <WiFiClient.h>
 
-using namespace std;
+#include <secrets.h>
+#include <net.h>
 
-ESP8266WiFiMulti WiFiMulti;
-ESP8266WebServer server(80);
+using namespace std;
 
 String ipToString(IPAddress ip){
 	String s = "";
@@ -18,11 +17,7 @@ String ipToString(IPAddress ip){
 	return s;
 }
 
-void await_wifi() {
-	while (WiFiMulti.run() != WL_CONNECTED) {
-		delay(1000);
-	}
-}
+ESP8266WiFiMulti WiFiMulti;
 
 namespace Net {
 	String req(const char* host, int port, const char* path) {
@@ -40,7 +35,7 @@ namespace Net {
 		int httpCode = http.POST(body);
 		if(httpCode > 0) {
 			if(httpCode != 200) {
-				Serial.printf("Got err code %d and msg\n", httpCode, http.getString().c_str());
+				Serial.printf("Got err code %d and msg %s\n", httpCode, http.getString().c_str());
 			} else {
 				result = http.getString();
 			}
@@ -52,7 +47,10 @@ namespace Net {
 		return result;
 	}
 
+	bool _setup = false;
 	void setup() {
+		if (_setup) return;
+
 		for (uint8_t t = 4; t > 0; t--) {
 			Serial.printf("[SETUP] WAIT %d...\n", t);
 			Serial.flush();
@@ -60,6 +58,14 @@ namespace Net {
 		}
 
 		WiFi.mode(WIFI_AP_STA);
-		WiFiMulti.addAP("InterwebzBeneden", "Interwebz167");
+		WiFiMulti.addAP(WIFI_SSID, WIFI_PW);
+
+		_setup = true;
+	}
+
+	void await_wifi() {
+		while (WiFiMulti.run() != WL_CONNECTED) {
+			delay(1000);
+		}
 	}
 }
