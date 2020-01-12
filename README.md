@@ -1,6 +1,6 @@
 # Arduino board temperature driver
 
-This repo contains the code for an arduino board driving a temperature controller that consists of a simple servo motor going left or right.
+This repo contains the code for an arduino board driving a temperature controller that consists of a simple servo motor going left or right. It also measures the current temperature and sends this to the server, asking for a suggestion on what to do next (make it warmer or colder) depending on the server's target temperature.
 
 This project uses [PlatformIO](https://platformio.org/) for simple uploading and interfacing with the board itself.
 
