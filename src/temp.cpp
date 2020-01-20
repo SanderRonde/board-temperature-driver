@@ -1,3 +1,4 @@
+#include <secrets.h>
 #include <string.h>
 #include <EEPROM.h>
 #include <telnet.h>
@@ -36,7 +37,7 @@ namespace Temp {
 	String get_state(float temp) {
 		char* path = (char*) malloc(sizeof(char) * 40);
 		sprintf(path, "/temperature/advise/%.1f", (double) temp);
-		String result = Net::req("***REMOVED***", 80, path);
+		String result = Net::req(BASE_NAME, 80, path);
 		free(path);
 		return result;
 	}
