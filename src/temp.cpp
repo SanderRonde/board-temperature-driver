@@ -1,6 +1,7 @@
 #include <secrets.h>
 #include <string.h>
 #include <EEPROM.h>
+#include <config.h>
 #include <telnet.h>
 #include <motor.h>
 #include <util.h>
@@ -33,6 +34,16 @@ namespace Temp {
 		EEPROM.begin(512);
 		EEPROM.get(0, data);
 	}
+
+	#ifndef USE_MOTOR
+	void report_state(float temp) {
+		char* path = (char*) malloc(sizeof(char) * 40);
+		sprintf(path, "/temperature/report/%.1f", (double) temp);
+		Net::req(BASE_NAME, 80, path);
+		free(path);
+	}
+	
+	#else
 
 	String get_state(float temp) {
 		char* path = (char*) malloc(sizeof(char) * 40);
@@ -86,6 +97,7 @@ namespace Temp {
 
 		Util::free_split(strings);
 	}
+	#endif
 
 	int loop_counts = 0;
 	unsigned int last_loop = 0;
@@ -100,19 +112,26 @@ namespace Temp {
 			}
 
 			if (loop_counts == 0) {
+				LOGF("Temp is %.1f\n", temp);
 				char* log = (char*) malloc(sizeof(char) * 100);
 				sprintf(log, "Temp is %.1f\n", temp);
 				LOG(log);
 				free(log);
 
+				#ifdef USE_MOTOR
 				update_state(temp);
+				#else
+				report_state(temp);
+				#endif
 			}
 
+			#ifdef USE_MOTOR
 			if (millis() > cooldown_start + POST_SWITCH_WAIT_TIME * 1000) {
 				// Cooldown over
 				is_in_cooldown = false;
 				update_mode(cooldown_state_on, false);
 			}
+			#endif
 
 			loop_counts++;
 			if (loop_counts >= UPDATE_INTERVAL_SECS) {

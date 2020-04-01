@@ -1,9 +1,10 @@
 #include <ArduinoOTA.h>
 #include <Arduino.h>
 #include <telnet.h>
-#include <ota.h>
+#include <config.h>
 #include <motor.h>
 #include <temp.h>
+#include <ota.h>
 #include <net.h>
 
 void setup() {
@@ -20,7 +21,9 @@ void setup() {
 	LOGN("Stopped waiting");
 
 	// Setup the rest
+	#ifdef USE_MOTOR
 	Motor::setup();
+	#endif
 	Temp::setup();
 	Net::setup();
 
