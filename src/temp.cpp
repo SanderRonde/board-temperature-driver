@@ -38,7 +38,7 @@ namespace Temp {
 	#ifndef USE_MOTOR
 	void report_state(float temp) {
 		char* path = (char*) malloc(sizeof(char) * 40);
-		sprintf(path, "/temperature/report/%.1f", (double) temp);
+		sprintf(path, "/temperature/report/%s/%.1f",  TEMPERATURE_NAME, (double) temp);
 		Net::req(BASE_NAME, 80, path);
 		free(path);
 	}
