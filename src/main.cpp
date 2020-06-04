@@ -12,7 +12,7 @@ void setup() {
 	Serial.println("Booting");
 
 	// Setup telnet
-	Telnet::setup("temp-board");
+	Telnet::setup((String("temp-board-") + TEMPERATURE_NAME).c_str());
 
 	// Setup OTA and wait
 	OTA::setup();
