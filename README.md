@@ -6,6 +6,14 @@ This project uses [PlatformIO](https://platformio.org/) for simple uploading and
 
 This project is part of the larger [home-automation](https://github.com/SanderRonde/home-automation) project, where this is part of the controlling touch screen module.
 
+## PCB
+
+PCB source file (in format of [EasyEda](https://easyeda.com)) can be found at `pcb/board-easyeda.json`.
+
+It takes an ESP8266 devkit board (can be either the wide or narrower one), a simple screw terminal and a `AM2122`-based temperature and humidity sensor module.
+
+![PCB](./pcb//board.png)
+
 ## License
 
 ```text
