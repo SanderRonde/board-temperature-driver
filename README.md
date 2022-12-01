@@ -8,11 +8,11 @@ This project is part of the larger [home-automation](https://github.com/SanderRo
 
 ## PCB
 
-PCB source file (in format of [EasyEda](https://easyeda.com)) can be found at `pcb/board-easyeda.json`.
+PCB source file (in format of [EasyEda](https://easyeda.com)) can be found at `pcb/pcb-easyeda.json`.
 
 It takes an ESP8266 devkit board (can be either the wide or narrower one), a simple screw terminal and a `AM2122`-based temperature and humidity sensor module.
 
-![PCB](./pcb//board.png)
+![PCB](./pcb/pcb.png)
 
 ## License
 
