@@ -27,8 +27,9 @@ namespace Net {
 		String result = "?";
 
 		HTTPClient http;
+		WiFiClient client;
 		http.setTimeout(2000);
-		http.begin(host, port, path);
+		http.begin(client, host, port, path);
 		http.addHeader("Content-Type", "text/plain");
 
 		String body = "";
