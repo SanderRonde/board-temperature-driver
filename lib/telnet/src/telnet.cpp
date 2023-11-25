@@ -4,8 +4,8 @@
 #include <telnet.h>
 #include <net.h>
 
-#define TELNET_IP "192.168.1.3"
-#define TELNET_PORT 1500
+#define TELNET_IP "__telnet.sanderron.de"
+#define TELNET_PORT 23
 
 #define RETRY_TIME 30
 
@@ -17,6 +17,9 @@ namespace Telnet {
 		client.connect(TELNET_IP, TELNET_PORT);
 		client.write("set-name:");
 		client.write(_name);
+		client.write("\n");
+		client.write("set-ip:");
+		client.write(WiFi.localIP().toString().c_str());
 		client.write("\n");
 		client.write("Hi\n");
 	}
