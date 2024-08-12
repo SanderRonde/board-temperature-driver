@@ -5,4 +5,5 @@
 .vscode/ipch
 
 .vscode
+net_secrets.h
 secrets.h

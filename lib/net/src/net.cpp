@@ -5,7 +5,7 @@
 #include <ESP8266HTTPClient.h>
 #include <WiFiClient.h>
 
-#include <secrets.h>
+#include <net_secrets.h>
 #include <net.h>
 
 using namespace std;
@@ -26,14 +26,49 @@ namespace Net {
 
 		String result = "?";
 
-		HTTPClient http;
 		WiFiClient client;
+		HTTPClient http;
 		http.setTimeout(2000);
 		http.begin(client, host, port, path);
 		http.addHeader("Content-Type", "text/plain");
 
 		String body = "";
 		int httpCode = http.POST(body);
+		if(httpCode > 0) {
+			if(httpCode != 200) {
+				Serial.printf("Got err code %d and msg %s\n", httpCode, http.getString().c_str());
+			} else {
+				result = http.getString();
+			}
+		} else {
+			Serial.printf("Got sending error %s\n", http.errorToString(httpCode).c_str());
+		}
+		http.end();
+
+		return result;
+	}
+
+	String req_auth(const char* host, int port, const char* path) {
+		// wait for WiFi connection
+		await_wifi();
+
+		String result = "?";
+
+		WiFiClient client;
+		HTTPClient http;
+		http.setTimeout(2000);
+		http.begin(client, host, port, path);
+		http.addHeader("Content-Type", "application/json");
+
+		String data = String("{\"auth\": \"");
+		
+		data += SECRET_KEY;
+		data += "\"";
+		data += ", \"ip\": \"";
+		data += ipToString(WiFi.localIP());
+		data += "\"}";
+
+		int httpCode = http.POST(data);
 		if(httpCode > 0) {
 			if(httpCode != 200) {
 				Serial.printf("Got err code %d and msg %s\n", httpCode, http.getString().c_str());
@@ -68,5 +103,9 @@ namespace Net {
 		while (WiFiMulti.run() != WL_CONNECTED) {
 			delay(1000);
 		}
+	}
+
+	String get_ip() {
+		return ipToString(WiFi.localIP());
 	}
 }
